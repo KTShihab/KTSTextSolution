@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
@@ -83,6 +84,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilledTonalButton
@@ -141,10 +143,15 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.Category
+import androidx.compose.material.icons.outlined.Checklist
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.DeleteSweep
+import androidx.compose.material.icons.outlined.FormatColorText
+import androidx.compose.material.icons.outlined.FormatSize
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.MoreVert
+import androidx.compose.material.icons.outlined.Numbers
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material.icons.outlined.StarBorder
@@ -440,6 +447,14 @@ fun KtsApp(
     if (vm.showFormatDialog) {
         FormatTextDialog(vm = vm, onDismiss = { vm.showFormatDialog = false })
     }
+    if (vm.showFormatInfoDialog && vm.formatInfoChunk != null) {
+        TextFormatInfoDialog(
+            vm = vm,
+            chunk = vm.formatInfoChunk!!,
+            index = vm.formatInfoChunkIndex,
+            onDismiss = { vm.dismissFormatInfo() },
+        )
+    }
     if (vm.showAccessibilityDialog) {
         AlertDialog(
             onDismissRequest = { vm.showAccessibilityDialog = false },
@@ -478,6 +493,7 @@ fun KtsApp(
     vm.windowId?.let { id ->
         val chunk = vm.chunks.find { it.id == id } ?: return@let
         FullEditWindow(
+            vm = vm,
             title = stringResource(R.string.open_window),
             initial = chunk.text,
             fontSize = vm.fontSize,
@@ -488,6 +504,7 @@ fun KtsApp(
     }
     vm.customWindowData?.let { (text, onSaveCallback) ->
         FullEditWindow(
+            vm = vm,
             title = stringResource(R.string.open_window),
             initial = text,
             fontSize = vm.fontSize,
@@ -1512,6 +1529,7 @@ private fun ColumnScope.TextWorkspace(vm: KtsViewModel, onCopy: () -> Unit) {
                     val copyLabel = stringResource(R.string.action_copy)
                     val switchToEditingLabel = stringResource(R.string.action_switch_to_editing)
                     val openWindowLabel = stringResource(R.string.open_window)
+                    val formatInfoLabel = stringResource(R.string.action_format_info)
                     val copiedMsg = stringResource(R.string.copied)
 
                     Card(
@@ -1541,6 +1559,11 @@ private fun ColumnScope.TextWorkspace(vm: KtsViewModel, onCopy: () -> Unit) {
                                         vm.windowId = chunk.id
                                         true
                                     },
+                                    CustomAccessibilityAction(formatInfoLabel) {
+                                        KtsHaptics.vibrateAction(context)
+                                        vm.showFormatInfo(chunk, index)
+                                        true
+                                    },
                                     CustomAccessibilityAction(switchToEditingLabel) {
                                         KtsHaptics.vibrateAction(context)
                                         vm.focusedChunkIndex = index
@@ -1549,12 +1572,19 @@ private fun ColumnScope.TextWorkspace(vm: KtsViewModel, onCopy: () -> Unit) {
                                     },
                                 )
                             }
-                            .clickable {
-                                KtsHaptics.vibrateSelect(context)
-                                vm.focusChunk(index) { i, total, t ->
-                                    String.format(java.util.Locale.getDefault(), template, i, total, t)
-                                }
-                            },
+                            .combinedClickable(
+                                onClick = {
+                                    KtsHaptics.vibrateSelect(context)
+                                    vm.focusChunk(index) { i, total, t ->
+                                        String.format(java.util.Locale.getDefault(), template, i, total, t)
+                                    }
+                                },
+                                onLongClick = {
+                                    KtsHaptics.vibrateLongPress(context)
+                                    vm.showFormatInfo(chunk, index)
+                                },
+                                onLongClickLabel = formatInfoLabel,
+                            ),
                         shape = RoundedCornerShape(8.dp),
                         colors = CardDefaults.cardColors(containerColor = containerColor),
                         border = BorderStroke(if (isFocused) 2.dp else 1.dp, borderColor),
@@ -1591,6 +1621,7 @@ private fun ColumnScope.TextWorkspace(vm: KtsViewModel, onCopy: () -> Unit) {
                     }
                     val moreActionsLabel = stringResource(R.string.more_actions)
                     val openWindowLabel = stringResource(R.string.open_window)
+                    val formatInfoLabel = stringResource(R.string.action_format_info)
                     val deleteLabel = stringResource(R.string.delete)
                     val copyLabel = stringResource(R.string.action_copy)
                     val deletedMsg = stringResource(R.string.delete)
@@ -1613,6 +1644,11 @@ private fun ColumnScope.TextWorkspace(vm: KtsViewModel, onCopy: () -> Unit) {
                                         KtsHaptics.vibrateAction(context)
                                         vm.focusedChunkIndex = index
                                         vm.windowId = chunk.id
+                                        true
+                                    },
+                                    CustomAccessibilityAction(formatInfoLabel) {
+                                        KtsHaptics.vibrateAction(context)
+                                        vm.showFormatInfo(chunk, index)
                                         true
                                     },
                                     CustomAccessibilityAction(deleteLabel) {
@@ -1752,6 +1788,13 @@ private fun ColumnScope.TextWorkspace(vm: KtsViewModel, onCopy: () -> Unit) {
                             }
                         )
                     }
+                    selectionActions.add(
+                        CustomAccessibilityAction(stringResource(R.string.action_format_info)) {
+                            KtsHaptics.vibrateAction(context)
+                            vm.showFormatInfo(chunk, index)
+                            true
+                        }
+                    )
 
                     val containerColor = when {
                         isAnchor -> MaterialTheme.colorScheme.tertiaryContainer
@@ -1882,6 +1925,21 @@ private fun ActionSheet(
         TextButton(
             onClick = {
                 KtsHaptics.vibrateAction(context)
+                val chunk = vm.chunks.firstOrNull { it.id == id }
+                if (chunk != null) {
+                    vm.showFormatInfo(chunk)
+                }
+                vm.sheetId = null
+            },
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Icon(Icons.Outlined.Info, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+            Spacer(Modifier.width(8.dp))
+            Text(stringResource(R.string.format_info_title), color = MaterialTheme.colorScheme.primary)
+        }
+        TextButton(
+            onClick = {
+                KtsHaptics.vibrateAction(context)
                 vm.deleteChunk(id, deletedMsg, context)
             },
             modifier = Modifier.fillMaxWidth(),
@@ -1972,6 +2030,22 @@ private fun SelectionActionSheet(vm: KtsViewModel, id: String) {
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text(stringResource(R.string.select_all))
+        }
+
+        TextButton(
+            onClick = {
+                KtsHaptics.vibrateAction(context)
+                val chunk = vm.chunks.firstOrNull { it.id == id }
+                if (chunk != null) {
+                    vm.showFormatInfo(chunk)
+                }
+                vm.selectionSheetId = null
+            },
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Icon(Icons.Outlined.Info, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+            Spacer(Modifier.width(8.dp))
+            Text(stringResource(R.string.format_info_title), color = MaterialTheme.colorScheme.primary)
         }
 
         TextButton(
@@ -2293,6 +2367,329 @@ private fun FormatTextDialog(
 }
 
 @Composable
+private fun TextFormatInfoDialog(
+    vm: KtsViewModel,
+    chunk: Chunk,
+    index: Int,
+    onDismiss: () -> Unit,
+) {
+    val context = LocalView.current.context
+    val fontSizeSp = chunk.fontSizeSp ?: vm.fontSize
+    val isCustomSize = chunk.fontSizeSp != null
+    val isSelected = vm.selectedIds.contains(chunk.id)
+    val text = chunk.text
+    val charCount = text.length
+    val wordCount = text.trim().split(Regex("\\s+")).filter { it.isNotBlank() }.size
+    val lineCount = text.lines().size
+    val totalChunks = vm.chunks.size
+    val pos1Based = if (index >= 0) index + 1 else (vm.chunks.indexOfFirst { it.id == chunk.id } + 1).coerceAtLeast(1)
+
+    val previewSampleText = remember(text) {
+        if (text.length > 200) text.take(200) + "…" else text
+    }
+
+    val modeName = when (vm.splitMode) {
+        SplitMode.Paragraph -> stringResource(R.string.action_paragraph)
+        SplitMode.Sentence -> stringResource(R.string.action_sentence)
+        SplitMode.Line -> stringResource(R.string.action_line)
+        SplitMode.Word -> stringResource(R.string.action_word)
+        SplitMode.Character -> stringResource(R.string.action_character)
+        null -> "None"
+    }
+
+    val titleStr = stringResource(R.string.format_info_title)
+    val sizeLabel = stringResource(R.string.format_info_font_size)
+    val boldLabel = stringResource(R.string.format_info_bold)
+    val italicLabel = stringResource(R.string.format_info_italic)
+    val underlineLabel = stringResource(R.string.format_info_underline)
+    val yesStr = stringResource(R.string.format_info_yes)
+    val noStr = stringResource(R.string.format_info_no)
+    val colorLabel = stringResource(R.string.format_info_color)
+    val colorDesc = stringResource(R.string.format_info_color_desc)
+    val charsLabel = stringResource(R.string.format_info_chars)
+    val wordsLabel = stringResource(R.string.format_info_words)
+    val linesLabel = stringResource(R.string.format_info_lines)
+    val posLabel = stringResource(R.string.format_info_position)
+    val selectedStr = stringResource(R.string.format_info_selected)
+    val notSelectedStr = stringResource(R.string.format_info_not_selected)
+
+    val announceText = remember(chunk) {
+        buildString {
+            append(titleStr).append(". ")
+            append("$sizeLabel: ${fontSizeSp.toInt()} sp. ")
+            append(if (chunk.isBold) "$boldLabel: $yesStr. " else "$boldLabel: $noStr. ")
+            append(if (chunk.isItalic) "$italicLabel: $yesStr. " else "$italicLabel: $noStr. ")
+            append(if (chunk.isUnderline) "$underlineLabel: $yesStr. " else "$underlineLabel: $noStr. ")
+            append("$colorLabel: $colorDesc. ")
+            append("$charsLabel: $charCount. ")
+            append("$wordsLabel: $wordCount. ")
+            append("$linesLabel: $lineCount. ")
+            if (totalChunks > 0) {
+                append("$posLabel: $pos1Based of $totalChunks. ")
+            }
+            if (vm.tab == AppTab.Selection) {
+                append(if (isSelected) "$selectedStr. " else "$notSelectedStr. ")
+            }
+        }
+    }
+
+    LaunchedEffect(chunk.id) {
+        vm.announce = announceText
+    }
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+    ) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth(0.92f)
+                .fillMaxHeight(0.85f)
+                .clip(RoundedCornerShape(16.dp)),
+            color = MaterialTheme.colorScheme.surface,
+            tonalElevation = 6.dp,
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(20.dp),
+            ) {
+                // Header
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Info,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(28.dp),
+                    )
+                    Spacer(Modifier.width(12.dp))
+                    Text(
+                        text = stringResource(R.string.format_info_title),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.weight(1f),
+                    )
+                    IconButton(onClick = {
+                        KtsHaptics.vibrateAction(context)
+                        onDismiss()
+                    }) {
+                        Icon(
+                            imageVector = Icons.Outlined.Close,
+                            contentDescription = stringResource(R.string.close),
+                        )
+                    }
+                }
+
+                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    // Preview
+                    Text(
+                        text = stringResource(R.string.format_preview),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                        ),
+                        shape = RoundedCornerShape(8.dp),
+                    ) {
+                        Box(Modifier.padding(14.dp)) {
+                            Text(
+                                text = previewSampleText,
+                                fontSize = fontSizeSp.sp,
+                                fontWeight = if (chunk.isBold) FontWeight.Bold else FontWeight.Normal,
+                                fontStyle = if (chunk.isItalic) FontStyle.Italic else FontStyle.Normal,
+                                textDecoration = if (chunk.isUnderline) TextDecoration.Underline else TextDecoration.None,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                lineHeight = (fontSizeSp * 1.3f).sp,
+                            )
+                        }
+                    }
+
+                    Spacer(Modifier.height(4.dp))
+
+                    // Font Size
+                    FormatInfoRow(
+                        icon = Icons.Outlined.FormatSize,
+                        label = stringResource(R.string.format_info_font_size),
+                        value = if (isCustomSize) {
+                            stringResource(R.string.format_info_size_custom, fontSizeSp.toInt())
+                        } else {
+                            stringResource(R.string.format_info_size_default, fontSizeSp.toInt())
+                        },
+                        highlight = isCustomSize,
+                    )
+
+                    // Text Color
+                    FormatInfoRow(
+                        icon = Icons.Outlined.FormatColorText,
+                        label = stringResource(R.string.format_info_color),
+                        value = stringResource(R.string.format_info_color_desc),
+                    )
+
+                    // Bold
+                    FormatInfoRow(
+                        icon = Icons.Outlined.FormatBold,
+                        label = stringResource(R.string.format_info_bold),
+                        value = if (chunk.isBold) stringResource(R.string.format_info_yes) else stringResource(R.string.format_info_no),
+                        highlight = chunk.isBold,
+                    )
+
+                    // Italic
+                    FormatInfoRow(
+                        icon = Icons.Outlined.FormatItalic,
+                        label = stringResource(R.string.format_info_italic),
+                        value = if (chunk.isItalic) stringResource(R.string.format_info_yes) else stringResource(R.string.format_info_no),
+                        highlight = chunk.isItalic,
+                    )
+
+                    // Underline
+                    FormatInfoRow(
+                        icon = Icons.Outlined.FormatUnderlined,
+                        label = stringResource(R.string.format_info_underline),
+                        value = if (chunk.isUnderline) stringResource(R.string.format_info_yes) else stringResource(R.string.format_info_no),
+                        highlight = chunk.isUnderline,
+                    )
+
+                    // Navigation Mode
+                    FormatInfoRow(
+                        icon = Icons.Outlined.Category,
+                        label = stringResource(R.string.format_info_mode),
+                        value = modeName,
+                    )
+
+                    // Position
+                    if (totalChunks > 0) {
+                        FormatInfoRow(
+                            icon = Icons.Outlined.Numbers,
+                            label = stringResource(R.string.format_info_position),
+                            value = stringResource(R.string.format_info_position_val, pos1Based, totalChunks),
+                        )
+                    }
+
+                    // Selection Status (if Selection mode)
+                    if (vm.tab == AppTab.Selection) {
+                        FormatInfoRow(
+                            icon = Icons.Outlined.Checklist,
+                            label = stringResource(R.string.format_info_selection_status),
+                            value = if (isSelected) stringResource(R.string.format_info_selected) else stringResource(R.string.format_info_not_selected),
+                            highlight = isSelected,
+                        )
+                    }
+
+                    Spacer(Modifier.height(4.dp))
+
+                    // Text Statistics Card
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+                        ),
+                        shape = RoundedCornerShape(8.dp),
+                    ) {
+                        Column(Modifier.padding(14.dp)) {
+                            Text(
+                                text = stringResource(R.string.format_info_stats),
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                            Spacer(Modifier.height(10.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceAround,
+                            ) {
+                                FormatStatColumn(label = stringResource(R.string.format_info_chars), value = "$charCount")
+                                FormatStatColumn(label = stringResource(R.string.format_info_words), value = "$wordCount")
+                                FormatStatColumn(label = stringResource(R.string.format_info_lines), value = "$lineCount")
+                            }
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(12.dp))
+
+                Button(
+                    onClick = {
+                        KtsHaptics.vibrateAction(context)
+                        onDismiss()
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(stringResource(R.string.close))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun FormatInfoRow(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    value: String,
+    highlight: Boolean = false,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = if (highlight) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(20.dp),
+        )
+        Spacer(Modifier.width(10.dp))
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f),
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = if (highlight) FontWeight.Bold else FontWeight.SemiBold,
+            color = if (highlight) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+        )
+    }
+}
+
+@Composable
+private fun FormatStatColumn(label: String, value: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        Spacer(Modifier.height(2.dp))
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
 private fun FindReplaceDialog(
     vm: KtsViewModel,
     onDismiss: () -> Unit,
@@ -2433,6 +2830,7 @@ private fun EditDialog(
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 private fun FullEditWindow(
+    vm: KtsViewModel,
     title: String,
     initial: String,
     fontSize: Float,
@@ -2676,6 +3074,7 @@ private fun FullEditWindow(
                             }
                             val moreActionsLabel = stringResource(R.string.more_actions)
                             val listenPartLabel = stringResource(R.string.listen_part)
+                            val formatInfoLabel = stringResource(R.string.action_format_info)
                             val copyLabel = stringResource(R.string.action_copy)
                             val deleteLabel = stringResource(R.string.delete)
 
@@ -2694,6 +3093,11 @@ private fun FullEditWindow(
                                             CustomAccessibilityAction(listenPartLabel) {
                                                 KtsHaptics.vibrateAction(context)
                                                 BackgroundTtsManager.speak(chunk.text, "SubChunkTts")
+                                                true
+                                            },
+                                            CustomAccessibilityAction(formatInfoLabel) {
+                                                KtsHaptics.vibrateAction(context)
+                                                vm.showFormatInfo(chunk, index)
                                                 true
                                             },
                                             CustomAccessibilityAction(copyLabel) {
@@ -2793,6 +3197,18 @@ private fun FullEditWindow(
                     Icon(Icons.Outlined.ContentCopy, contentDescription = null)
                     Spacer(Modifier.width(8.dp))
                     Text(stringResource(R.string.action_copy))
+                }
+                TextButton(
+                    onClick = {
+                        KtsHaptics.vibrateAction(context)
+                        vm.showFormatInfo(chunk, subChunks.indexOf(chunk))
+                        subSheetId = null
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Icon(Icons.Outlined.Info, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.format_info_title), color = MaterialTheme.colorScheme.primary)
                 }
                 TextButton(
                     onClick = {

@@ -249,4 +249,28 @@
     <string name="update_go_to_settings">സെറ്റിങ്‌സിലേക്ക് പോകുക</string>
     <string name="update_failed">അപ്‌ഡേറ്റ് പരിശോധിക്കാൻ കഴിഞ്ഞില്ല: %1$s</string>
     <string name="update_no_release">ഗിറ്റ്ഹബ്ബിൽ പുതിയ റിലീസുകൾ ലഭ്യമല്ല.</string>
+
+    <string name="action_format_info">Text Format Information</string>
+    <string name="format_info_title">Text Format Information</string>
+    <string name="format_info_font_size">ഫോണ്ട് സൈസ് (വലുപ്പം)</string>
+    <string name="format_info_size_custom">%1$d sp (കസ്റ്റം ഫോർമാറ്റിംഗ്)</string>
+    <string name="format_info_size_default">%1$d sp (ആപ്പ് ഡിഫോൾട്ട് വലുപ്പം)</string>
+    <string name="format_info_color">ടെക്സ്റ്റ് നിറം (Color)</string>
+    <string name="format_info_color_desc">ഹൈ കോൺട്രാസ്റ്റ് തീം കളർ</string>
+    <string name="format_info_bold">ബോൾഡ് (Bold)</string>
+    <string name="format_info_italic">ഇറ്റാലിക് (Italic)</string>
+    <string name="format_info_underline">അണ്ടർലൈൻ (Underline)</string>
+    <string name="format_info_yes">ഉണ്ട് (Yes)</string>
+    <string name="format_info_no">ഇല്ല (No)</string>
+    <string name="format_info_stats">ടെക്സ്റ്റ് സ്ഥിതിവിവരക്കണക്കുകൾ</string>
+    <string name="format_info_chars">അക്ഷരങ്ങൾ</string>
+    <string name="format_info_words">വാക്കുകൾ</string>
+    <string name="format_info_lines">വരികൾ</string>
+    <string name="format_info_position">സ്ഥാനം (Position)</string>
+    <string name="format_info_position_val">ഭാഗം %1$d / %2$d</string>
+    <string name="format_info_mode">സ്പ്ലിറ്റ് മോഡ് (Split Mode)</string>
+    <string name="format_info_selection_status">സെലക്ഷൻ സ്റ്റാറ്റസ്</string>
+    <string name="format_info_selected">തിരഞ്ഞെടുത്തത് (Selected)</string>
+    <string name="format_info_not_selected">തിരഞ്ഞെടുക്കാത്തത് (Not Selected)</string>
+    <string name="close">അടയ്ക്കുക</string>
 </resources>

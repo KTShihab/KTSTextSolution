@@ -247,4 +247,28 @@
     <string name="update_go_to_settings">Go to Settings</string>
     <string name="update_failed">Update check failed: %1$s</string>
     <string name="update_no_release">No releases found on GitHub.</string>
+
+    <string name="action_format_info">Text Format Information</string>
+    <string name="format_info_title">Text Format Information</string>
+    <string name="format_info_font_size">Font Size</string>
+    <string name="format_info_size_custom">%1$d sp (Custom)</string>
+    <string name="format_info_size_default">%1$d sp (App Default)</string>
+    <string name="format_info_color">Text Color</string>
+    <string name="format_info_color_desc">Theme High Contrast On-Surface</string>
+    <string name="format_info_bold">Bold</string>
+    <string name="format_info_italic">Italic</string>
+    <string name="format_info_underline">Underline</string>
+    <string name="format_info_yes">Yes</string>
+    <string name="format_info_no">No</string>
+    <string name="format_info_stats">Text Statistics</string>
+    <string name="format_info_chars">Characters</string>
+    <string name="format_info_words">Words</string>
+    <string name="format_info_lines">Lines</string>
+    <string name="format_info_position">Position</string>
+    <string name="format_info_position_val">Chunk %1$d of %2$d</string>
+    <string name="format_info_mode">Split Mode</string>
+    <string name="format_info_selection_status">Selection Status</string>
+    <string name="format_info_selected">Selected</string>
+    <string name="format_info_not_selected">Not Selected</string>
+    <string name="close">Close</string>
 </resources>

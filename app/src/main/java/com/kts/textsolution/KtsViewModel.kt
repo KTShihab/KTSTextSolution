@@ -294,6 +294,9 @@ class KtsViewModel : ViewModel() {
     var findQuery by mutableStateOf("")
     var replaceQuery by mutableStateOf("")
     var showFormatDialog by mutableStateOf(false)
+    var formatInfoChunk by mutableStateOf<Chunk?>(null)
+    var formatInfoChunkIndex by mutableIntStateOf(0)
+    var showFormatInfoDialog by mutableStateOf(false)
     var isLoadingWebPage by mutableStateOf(false)
 
     // Background Reading State
@@ -1085,6 +1088,17 @@ class KtsViewModel : ViewModel() {
         selectionSheetId = null
         saveActiveSessionState()
         announce = formattedMsg
+    }
+
+    fun showFormatInfo(chunk: Chunk, index: Int = -1) {
+        formatInfoChunk = chunk
+        formatInfoChunkIndex = if (index >= 0) index else chunks.indexOfFirst { it.id == chunk.id }
+        showFormatInfoDialog = true
+    }
+
+    fun dismissFormatInfo() {
+        showFormatInfoDialog = false
+        formatInfoChunk = null
     }
 
     fun cutCurrentOrSelected(context: Context, cutMsg: String): String {
