@@ -271,4 +271,36 @@
     <string name="format_info_selected">Selected</string>
     <string name="format_info_not_selected">Not Selected</string>
     <string name="close">Close</string>
+
+    <string name="format_color_title">Text Color</string>
+    <string name="format_color_default">Default Theme Color</string>
+    <string name="format_color_red">Red</string>
+    <string name="format_color_blue">Blue</string>
+    <string name="format_color_green">Green</string>
+    <string name="format_color_orange">Orange</string>
+    <string name="format_color_purple">Purple</string>
+    <string name="format_color_teal">Teal</string>
+    <string name="format_color_yellow">Yellow</string>
+    <string name="format_color_black">Black</string>
+    <string name="format_color_white">White</string>
+
+    <string name="format_alignment_title">Alignment</string>
+    <string name="format_align_default">Default</string>
+    <string name="format_align_left">Left</string>
+    <string name="format_align_center">Center</string>
+    <string name="format_align_right">Right</string>
+    <string name="format_align_justify">Justify</string>
+
+    <string name="format_case_title">Change Case</string>
+    <string name="format_case_keep">No Change</string>
+    <string name="format_case_upper">UPPERCASE</string>
+    <string name="format_case_lower">lowercase</string>
+    <string name="format_case_title_case">Capitalize Each Word (Title Case)</string>
+    <string name="format_case_journal">Sentence / Journal Case</string>
+
+    <string name="format_list_title">Bullets &amp; Numbering</string>
+    <string name="format_list_keep">Keep</string>
+    <string name="format_list_none">None (Remove List)</string>
+    <string name="format_list_bullet">Bullet List (•)</string>
+    <string name="format_list_number">Numbered List (1., 2., 3.)</string>
 </resources>

@@ -13,6 +13,8 @@ data class Chunk(
     val isBold: Boolean = false,
     val isItalic: Boolean = false,
     val isUnderline: Boolean = false,
+    val textColorHex: String? = null,
+    val alignment: String? = null,
 )
 
 object TextSplitter {

@@ -1068,26 +1068,85 @@ class KtsViewModel : ViewModel() {
         isBold: Boolean,
         isItalic: Boolean,
         isUnderline: Boolean,
+        textColorHex: String? = null,
+        alignment: String? = null,
+        caseType: String? = "keep",
+        listType: String? = "keep",
         formattedMsg: String,
     ) {
         if (selectedIds.isEmpty()) return
         push()
+        var numberSeq = 1
+        var textChanged = false
         chunks = chunks.map { chunk ->
             if (chunk.id in selectedIds) {
+                var newText = chunk.text
+                if (!caseType.isNullOrBlank() && caseType != "keep") {
+                    newText = applyCaseChange(newText, caseType)
+                    textChanged = true
+                }
+                if (!listType.isNullOrBlank() && listType != "keep") {
+                    newText = applyListStyle(newText, listType, numberSeq++)
+                    textChanged = true
+                }
                 chunk.copy(
+                    text = newText,
                     fontSizeSp = fontSize,
                     isBold = isBold,
                     isItalic = isItalic,
                     isUnderline = isUnderline,
+                    textColorHex = textColorHex,
+                    alignment = alignment,
                 )
             } else {
                 chunk
             }
         }
+        if (textChanged) {
+            sourceText = TextSplitter.join(chunks, splitMode)
+        }
         showFormatDialog = false
         selectionSheetId = null
         saveActiveSessionState()
         announce = formattedMsg
+    }
+
+    companion object {
+        fun applyCaseChange(text: String, caseType: String): String {
+            return when (caseType) {
+                "upper" -> text.uppercase(Locale.getDefault())
+                "lower" -> text.lowercase(Locale.getDefault())
+                "title" -> {
+                    text.split(Regex("(?<=\\s)|(?=\\s)")).joinToString("") { word ->
+                        if (word.isBlank()) word
+                        else word.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
+                    }
+                }
+                "sentence" -> {
+                    val regex = Regex("(^|[.!?\\n]\\s*)([\\p{Ll}a-z])")
+                    regex.replace(text) { matchResult ->
+                        val prefix = matchResult.groupValues[1]
+                        val char = matchResult.groupValues[2]
+                        prefix + char.uppercase(Locale.getDefault())
+                    }
+                }
+                else -> text
+            }
+        }
+
+        fun stripListPrefix(text: String): String {
+            return text.replace(Regex("^(\\s*)([•*\\-–—]\\s*|\\d+([.)]|\\s*-\\s*)\\s*)"), "$1")
+        }
+
+        fun applyListStyle(text: String, listType: String, index: Int): String {
+            val stripped = stripListPrefix(text).trimStart()
+            return when (listType) {
+                "bullet" -> "• $stripped"
+                "number" -> "$index. $stripped"
+                "none" -> stripped
+                else -> text
+            }
+        }
     }
 
     fun showFormatInfo(chunk: Chunk, index: Int = -1) {

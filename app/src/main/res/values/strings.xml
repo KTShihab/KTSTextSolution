@@ -273,4 +273,36 @@
     <string name="format_info_selected">തിരഞ്ഞെടുത്തത് (Selected)</string>
     <string name="format_info_not_selected">തിരഞ്ഞെടുക്കാത്തത് (Not Selected)</string>
     <string name="close">അടയ്ക്കുക</string>
+
+    <string name="format_color_title">ടെക്സ്റ്റ് നിറം (Color)</string>
+    <string name="format_color_default">ഡിഫോൾട്ട് തീം നിറം</string>
+    <string name="format_color_red">ചുവപ്പ് (Red)</string>
+    <string name="format_color_blue">നീല (Blue)</string>
+    <string name="format_color_green">പച്ച (Green)</string>
+    <string name="format_color_orange">ഓറഞ്ച് (Orange)</string>
+    <string name="format_color_purple">വയലറ്റ് (Purple)</string>
+    <string name="format_color_teal">ടീൽ (Teal)</string>
+    <string name="format_color_yellow">മഞ്ഞ (Yellow)</string>
+    <string name="format_color_black">കറുപ്പ് (Black)</string>
+    <string name="format_color_white">വെള്ള (White)</string>
+
+    <string name="format_alignment_title">അലൈൻമെന്റ് (Alignment)</string>
+    <string name="format_align_default">ഡിഫോൾട്ട്</string>
+    <string name="format_align_left">ഇടതുവശം (Left)</string>
+    <string name="format_align_center">മധ്യഭാഗം (Center)</string>
+    <string name="format_align_right">വലതുവശം (Right)</string>
+    <string name="format_align_justify">ജസ്റ്റിഫൈ (Justify)</string>
+
+    <string name="format_case_title">കേസ് മാറ്റം (Change Case)</string>
+    <string name="format_case_keep">മാറ്റമില്ല (No Change)</string>
+    <string name="format_case_upper">വലിയക്ഷരങ്ങൾ (UPPERCASE)</string>
+    <string name="format_case_lower">ചെറിയക്ഷരങ്ങൾ (lowercase)</string>
+    <string name="format_case_title_case">ഓരോ വാക്കും വലുതാക്കുക (Title Case)</string>
+    <string name="format_case_journal">വാക്യത്തിന്റെ ആദ്യക്ഷരം വലുതാക്കുക (Journal Case)</string>
+
+    <string name="format_list_title">ബുള്ളറ്റും നമ്പറിംഗും (Bullets &amp; Numbering)</string>
+    <string name="format_list_keep">മാറ്റമില്ല (Keep)</string>
+    <string name="format_list_none">ലിസ്റ്റ് ഒഴിവാക്കുക (None)</string>
+    <string name="format_list_bullet">ബുള്ളറ്റ് ലിസ്റ്റ് (• Bullet)</string>
+    <string name="format_list_number">നമ്പറിംഗ് ലിസ്റ്റ് (1. Numbered)</string>
 </resources>

@@ -63,6 +63,16 @@ import androidx.compose.material.icons.outlined.FormatItalic
 import androidx.compose.material.icons.outlined.FormatPaint
 import androidx.compose.material.icons.outlined.FormatSize
 import androidx.compose.material.icons.outlined.FormatUnderlined
+import androidx.compose.material.icons.outlined.FormatAlignLeft
+import androidx.compose.material.icons.outlined.FormatAlignCenter
+import androidx.compose.material.icons.outlined.FormatAlignRight
+import androidx.compose.material.icons.outlined.FormatAlignJustify
+import androidx.compose.material.icons.outlined.FormatListBulleted
+import androidx.compose.material.icons.outlined.FormatListNumbered
+import androidx.compose.material.icons.outlined.FormatColorText
+import androidx.compose.material.icons.outlined.TextFields
+import androidx.compose.material.icons.outlined.Palette
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.material.icons.outlined.HelpOutline
@@ -1589,17 +1599,32 @@ private fun ColumnScope.TextWorkspace(vm: KtsViewModel, onCopy: () -> Unit) {
                         colors = CardDefaults.cardColors(containerColor = containerColor),
                         border = BorderStroke(if (isFocused) 2.dp else 1.dp, borderColor),
                     ) {
+                        val chunkColor = parseChunkColor(chunk.textColorHex, MaterialTheme.colorScheme.onSurface)
+                        val chunkTextAlign = when (chunk.alignment) {
+                            "center" -> TextAlign.Center
+                            "right" -> TextAlign.Right
+                            "justify" -> TextAlign.Justify
+                            "left" -> TextAlign.Left
+                            else -> textAlign
+                        }
+                        val chunkCellAlignment = when (chunk.alignment) {
+                            "center" -> Alignment.Center
+                            "right" -> Alignment.CenterEnd
+                            "justify" -> Alignment.CenterStart
+                            "left" -> Alignment.CenterStart
+                            else -> cellAlignment
+                        }
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(cellPadding),
-                            contentAlignment = cellAlignment,
+                            contentAlignment = chunkCellAlignment,
                         ) {
                             Text(
                                 text = chunk.text,
                                 fontSize = (chunk.fontSizeSp ?: vm.fontSize).sp,
-                                textAlign = textAlign,
-                                color = MaterialTheme.colorScheme.onSurface,
+                                textAlign = chunkTextAlign,
+                                color = chunkColor,
                                 fontWeight = if (chunk.isBold) FontWeight.Bold else FontWeight.Normal,
                                 fontStyle = if (chunk.isItalic) FontStyle.Italic else FontStyle.Normal,
                                 textDecoration = if (chunk.isUnderline) TextDecoration.Underline else TextDecoration.None,
@@ -1682,17 +1707,32 @@ private fun ColumnScope.TextWorkspace(vm: KtsViewModel, onCopy: () -> Unit) {
                         colors = CardDefaults.cardColors(containerColor = containerColor),
                         border = BorderStroke(if (isFocused) 2.dp else 1.dp, borderColor),
                     ) {
+                        val chunkColor = parseChunkColor(chunk.textColorHex, MaterialTheme.colorScheme.onSurface)
+                        val chunkTextAlign = when (chunk.alignment) {
+                            "center" -> TextAlign.Center
+                            "right" -> TextAlign.Right
+                            "justify" -> TextAlign.Justify
+                            "left" -> TextAlign.Left
+                            else -> textAlign
+                        }
+                        val chunkCellAlignment = when (chunk.alignment) {
+                            "center" -> Alignment.Center
+                            "right" -> Alignment.CenterEnd
+                            "justify" -> Alignment.CenterStart
+                            "left" -> Alignment.CenterStart
+                            else -> cellAlignment
+                        }
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(cellPadding),
-                            contentAlignment = cellAlignment,
+                            contentAlignment = chunkCellAlignment,
                         ) {
                             Text(
                                 text = chunk.text,
                                 fontSize = (chunk.fontSizeSp ?: vm.fontSize).sp,
-                                textAlign = textAlign,
-                                color = MaterialTheme.colorScheme.onSurface,
+                                textAlign = chunkTextAlign,
+                                color = chunkColor,
                                 fontWeight = if (chunk.isBold) FontWeight.Bold else FontWeight.Normal,
                                 fontStyle = if (chunk.isItalic) FontStyle.Italic else FontStyle.Normal,
                                 textDecoration = if (chunk.isUnderline) TextDecoration.Underline else TextDecoration.None,
@@ -1841,6 +1881,21 @@ private fun ColumnScope.TextWorkspace(vm: KtsViewModel, onCopy: () -> Unit) {
                         colors = CardDefaults.cardColors(containerColor = containerColor),
                         border = BorderStroke(borderWidth, borderColor),
                     ) {
+                        val chunkColor = if (selected) contentColor else parseChunkColor(chunk.textColorHex, contentColor)
+                        val chunkTextAlign = when (chunk.alignment) {
+                            "center" -> TextAlign.Center
+                            "right" -> TextAlign.Right
+                            "justify" -> TextAlign.Justify
+                            "left" -> TextAlign.Left
+                            else -> textAlign
+                        }
+                        val chunkCellAlignment = when (chunk.alignment) {
+                            "center" -> Alignment.Center
+                            "right" -> Alignment.CenterEnd
+                            "justify" -> Alignment.CenterStart
+                            "left" -> Alignment.CenterStart
+                            else -> cellAlignment
+                        }
                         if (columnCount <= 2) {
                             Row(
                                 modifier = Modifier
@@ -1859,7 +1914,8 @@ private fun ColumnScope.TextWorkspace(vm: KtsViewModel, onCopy: () -> Unit) {
                                 Text(
                                     text = chunk.text,
                                     fontSize = (chunk.fontSizeSp ?: vm.fontSize).sp,
-                                    color = contentColor,
+                                    textAlign = chunkTextAlign,
+                                    color = chunkColor,
                                     fontWeight = when {
                                         chunk.isBold -> FontWeight.Bold
                                         isAnchor || selected -> FontWeight.SemiBold
@@ -1875,13 +1931,13 @@ private fun ColumnScope.TextWorkspace(vm: KtsViewModel, onCopy: () -> Unit) {
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(cellPadding),
-                                contentAlignment = cellAlignment,
+                                contentAlignment = chunkCellAlignment,
                             ) {
                                 Text(
                                     text = chunk.text,
                                     fontSize = (chunk.fontSizeSp ?: vm.fontSize).sp,
-                                    textAlign = textAlign,
-                                    color = contentColor,
+                                    textAlign = chunkTextAlign,
+                                    color = chunkColor,
                                     fontWeight = when {
                                         chunk.isBold -> FontWeight.Bold
                                         isAnchor || selected -> FontWeight.Bold
@@ -2091,6 +2147,16 @@ private fun SelectionActionSheet(vm: KtsViewModel, id: String) {
     }
 }
 
+fun parseChunkColor(hex: String?, defaultColor: Color): Color {
+    if (hex.isNullOrBlank()) return defaultColor
+    return try {
+        Color(android.graphics.Color.parseColor(hex))
+    } catch (_: Exception) {
+        defaultColor
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun FormatTextDialog(
     vm: KtsViewModel,
@@ -2117,11 +2183,59 @@ private fun FormatTextDialog(
     var isUnderline by remember {
         mutableStateOf(firstSelectedChunk?.isUnderline ?: false)
     }
+    var selectedColorHex by remember {
+        mutableStateOf(firstSelectedChunk?.textColorHex)
+    }
+    var alignment by remember {
+        mutableStateOf(firstSelectedChunk?.alignment)
+    }
+    var caseType by remember {
+        mutableStateOf("keep")
+    }
+    var listType by remember {
+        mutableStateOf("keep")
+    }
 
-    val previewSampleText = remember {
+    val colorOptions = remember {
+        listOf(
+            Pair(null, context.getString(R.string.format_color_default)),
+            Pair("#E53935", context.getString(R.string.format_color_red)),
+            Pair("#1E88E5", context.getString(R.string.format_color_blue)),
+            Pair("#43A047", context.getString(R.string.format_color_green)),
+            Pair("#FB8C00", context.getString(R.string.format_color_orange)),
+            Pair("#8E24AA", context.getString(R.string.format_color_purple)),
+            Pair("#00897B", context.getString(R.string.format_color_teal)),
+            Pair("#FDD835", context.getString(R.string.format_color_yellow)),
+            Pair("#212121", context.getString(R.string.format_color_black)),
+            Pair("#FFFFFF", context.getString(R.string.format_color_white)),
+        )
+    }
+
+    val previewRawSample = remember {
         val sample = firstSelectedChunk?.text?.take(80) ?: "Sample Text"
         if (sample.length == 80) "$sample…" else sample
     }
+
+    val previewSampleText = remember(previewRawSample, caseType, listType) {
+        var res = previewRawSample
+        if (caseType != "keep") {
+            res = KtsViewModel.applyCaseChange(res, caseType)
+        }
+        if (listType != "keep") {
+            res = KtsViewModel.applyListStyle(res, listType, 1)
+        }
+        res
+    }
+
+    val previewTextAlign = when (alignment) {
+        "center" -> TextAlign.Center
+        "right" -> TextAlign.Right
+        "justify" -> TextAlign.Justify
+        "left" -> TextAlign.Left
+        else -> TextAlign.Start
+    }
+
+    val previewColor = parseChunkColor(selectedColorHex, MaterialTheme.colorScheme.onSurface)
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -2181,8 +2295,10 @@ private fun FormatTextDialog(
                             fontWeight = if (isBold) FontWeight.Bold else FontWeight.Normal,
                             fontStyle = if (isItalic) FontStyle.Italic else FontStyle.Normal,
                             textDecoration = if (isUnderline) TextDecoration.Underline else TextDecoration.None,
-                            color = MaterialTheme.colorScheme.onSurface,
+                            color = previewColor,
+                            textAlign = previewTextAlign,
                             lineHeight = if (useDefaultFontSize) (vm.fontSize * 1.3f).sp else (fontSize * 1.3f).sp,
+                            modifier = Modifier.fillMaxWidth(),
                         )
                     }
                 }
@@ -2252,16 +2368,16 @@ private fun FormatTextDialog(
                     )
                 }
 
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(10.dp))
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(10.dp))
 
                 // Bold Option
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { isBold = !isBold }
-                        .padding(vertical = 6.dp),
+                        .padding(vertical = 4.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -2289,7 +2405,7 @@ private fun FormatTextDialog(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { isItalic = !isItalic }
-                        .padding(vertical = 6.dp),
+                        .padding(vertical = 4.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -2317,7 +2433,7 @@ private fun FormatTextDialog(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { isUnderline = !isUnderline }
-                        .padding(vertical = 6.dp),
+                        .padding(vertical = 4.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -2339,6 +2455,182 @@ private fun FormatTextDialog(
                         onCheckedChange = { isUnderline = it },
                     )
                 }
+
+                Spacer(Modifier.height(10.dp))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                Spacer(Modifier.height(10.dp))
+
+                // Text Color Section
+                Text(
+                    stringResource(R.string.format_color_title),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(bottom = 8.dp),
+                )
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    items(colorOptions.size) { i ->
+                        val (hex, label) = colorOptions[i]
+                        val isSelected = selectedColorHex == hex
+                        val chipColor = parseChunkColor(hex, MaterialTheme.colorScheme.onSurface)
+                        Surface(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clickable { selectedColorHex = hex },
+                            shape = RoundedCornerShape(20.dp),
+                            color = if (hex == null) MaterialTheme.colorScheme.surfaceVariant else chipColor,
+                            border = BorderStroke(
+                                if (isSelected) 3.dp else 1.dp,
+                                if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                            ),
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                if (hex == null) {
+                                    Text(
+                                        "A",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 14.sp,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                    )
+                                } else if (isSelected) {
+                                    Icon(
+                                        imageVector = Icons.Outlined.CheckBox,
+                                        contentDescription = "$label (Selected)",
+                                        tint = if (hex == "#FFFFFF" || hex == "#FDD835") Color.Black else Color.White,
+                                        modifier = Modifier.size(18.dp),
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(14.dp))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                Spacer(Modifier.height(10.dp))
+
+                // Alignment Section
+                Text(
+                    stringResource(R.string.format_alignment_title),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(bottom = 8.dp),
+                )
+                LazyRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    val aligns = listOf(
+                        Triple(null, context.getString(R.string.format_align_default), Icons.Outlined.FormatAlignLeft),
+                        Triple("left", context.getString(R.string.format_align_left), Icons.Outlined.FormatAlignLeft),
+                        Triple("center", context.getString(R.string.format_align_center), Icons.Outlined.FormatAlignCenter),
+                        Triple("right", context.getString(R.string.format_align_right), Icons.Outlined.FormatAlignRight),
+                        Triple("justify", context.getString(R.string.format_align_justify), Icons.Outlined.FormatAlignJustify),
+                    )
+                    items(aligns.size) { idx ->
+                        val (aKey, aLabel, aIcon) = aligns[idx]
+                        val isSelected = alignment == aKey
+                        FilterChip(
+                            selected = isSelected,
+                            onClick = { alignment = aKey },
+                            label = { Text(aLabel, style = MaterialTheme.typography.bodySmall) },
+                            leadingIcon = {
+                                Icon(
+                                    aIcon,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp),
+                                )
+                            },
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(14.dp))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                Spacer(Modifier.height(10.dp))
+
+                // Change Case Section
+                Text(
+                    stringResource(R.string.format_case_title),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(bottom = 8.dp),
+                )
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    val cases = listOf(
+                        Pair("keep", stringResource(R.string.format_case_keep)),
+                        Pair("upper", stringResource(R.string.format_case_upper)),
+                        Pair("lower", stringResource(R.string.format_case_lower)),
+                        Pair("title", stringResource(R.string.format_case_title_case)),
+                        Pair("sentence", stringResource(R.string.format_case_journal)),
+                    )
+                    cases.forEach { (cKey, cLabel) ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { caseType = cKey }
+                                .padding(vertical = 3.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            RadioButton(
+                                selected = caseType == cKey,
+                                onClick = { caseType = cKey },
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                cLabel,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = if (caseType == cKey) FontWeight.SemiBold else FontWeight.Normal,
+                            )
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(14.dp))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                Spacer(Modifier.height(10.dp))
+
+                // Bullets & Numbering Section
+                Text(
+                    stringResource(R.string.format_list_title),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(bottom = 8.dp),
+                )
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    val lists = listOf(
+                        Pair("keep", stringResource(R.string.format_list_keep)),
+                        Pair("bullet", stringResource(R.string.format_list_bullet)),
+                        Pair("number", stringResource(R.string.format_list_number)),
+                        Pair("none", stringResource(R.string.format_list_none)),
+                    )
+                    lists.forEach { (lKey, lLabel) ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { listType = lKey }
+                                .padding(vertical = 3.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            RadioButton(
+                                selected = listType == lKey,
+                                onClick = { listType = lKey },
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                lLabel,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = if (listType == lKey) FontWeight.SemiBold else FontWeight.Normal,
+                            )
+                        }
+                    }
+                }
             }
         },
         confirmButton = {
@@ -2351,6 +2643,10 @@ private fun FormatTextDialog(
                         isBold = isBold,
                         isItalic = isItalic,
                         isUnderline = isUnderline,
+                        textColorHex = selectedColorHex,
+                        alignment = alignment,
+                        caseType = caseType,
+                        listType = listType,
                         formattedMsg = appliedMsg,
                     )
                 },
@@ -2405,7 +2701,33 @@ private fun TextFormatInfoDialog(
     val yesStr = stringResource(R.string.format_info_yes)
     val noStr = stringResource(R.string.format_info_no)
     val colorLabel = stringResource(R.string.format_info_color)
-    val colorDesc = stringResource(R.string.format_info_color_desc)
+    val colorDesc = when (chunk.textColorHex) {
+        "#E53935" -> stringResource(R.string.format_color_red)
+        "#1E88E5" -> stringResource(R.string.format_color_blue)
+        "#43A047" -> stringResource(R.string.format_color_green)
+        "#FB8C00" -> stringResource(R.string.format_color_orange)
+        "#8E24AA" -> stringResource(R.string.format_color_purple)
+        "#00897B" -> stringResource(R.string.format_color_teal)
+        "#FDD835" -> stringResource(R.string.format_color_yellow)
+        "#212121" -> stringResource(R.string.format_color_black)
+        "#FFFFFF" -> stringResource(R.string.format_color_white)
+        null -> stringResource(R.string.format_color_default)
+        else -> chunk.textColorHex ?: stringResource(R.string.format_color_default)
+    }
+    val alignLabel = stringResource(R.string.format_alignment_title)
+    val alignDesc = when (chunk.alignment) {
+        "left" -> stringResource(R.string.format_align_left)
+        "center" -> stringResource(R.string.format_align_center)
+        "right" -> stringResource(R.string.format_align_right)
+        "justify" -> stringResource(R.string.format_align_justify)
+        else -> stringResource(R.string.format_align_default)
+    }
+    val alignIcon = when (chunk.alignment) {
+        "center" -> Icons.Outlined.FormatAlignCenter
+        "right" -> Icons.Outlined.FormatAlignRight
+        "justify" -> Icons.Outlined.FormatAlignJustify
+        else -> Icons.Outlined.FormatAlignLeft
+    }
     val charsLabel = stringResource(R.string.format_info_chars)
     val wordsLabel = stringResource(R.string.format_info_words)
     val linesLabel = stringResource(R.string.format_info_lines)
@@ -2421,6 +2743,7 @@ private fun TextFormatInfoDialog(
             append(if (chunk.isItalic) "$italicLabel: $yesStr. " else "$italicLabel: $noStr. ")
             append(if (chunk.isUnderline) "$underlineLabel: $yesStr. " else "$underlineLabel: $noStr. ")
             append("$colorLabel: $colorDesc. ")
+            append("$alignLabel: $alignDesc. ")
             append("$charsLabel: $charCount. ")
             append("$wordsLabel: $wordCount. ")
             append("$linesLabel: $lineCount. ")
@@ -2513,8 +2836,16 @@ private fun TextFormatInfoDialog(
                                 fontWeight = if (chunk.isBold) FontWeight.Bold else FontWeight.Normal,
                                 fontStyle = if (chunk.isItalic) FontStyle.Italic else FontStyle.Normal,
                                 textDecoration = if (chunk.isUnderline) TextDecoration.Underline else TextDecoration.None,
-                                color = MaterialTheme.colorScheme.onSurface,
+                                color = parseChunkColor(chunk.textColorHex, MaterialTheme.colorScheme.onSurface),
+                                textAlign = when (chunk.alignment) {
+                                    "center" -> TextAlign.Center
+                                    "right" -> TextAlign.Right
+                                    "justify" -> TextAlign.Justify
+                                    "left" -> TextAlign.Left
+                                    else -> TextAlign.Start
+                                },
                                 lineHeight = (fontSizeSp * 1.3f).sp,
+                                modifier = Modifier.fillMaxWidth(),
                             )
                         }
                     }
@@ -2537,7 +2868,16 @@ private fun TextFormatInfoDialog(
                     FormatInfoRow(
                         icon = Icons.Outlined.FormatColorText,
                         label = stringResource(R.string.format_info_color),
-                        value = stringResource(R.string.format_info_color_desc),
+                        value = colorDesc,
+                        highlight = chunk.textColorHex != null,
+                    )
+
+                    // Alignment
+                    FormatInfoRow(
+                        icon = alignIcon,
+                        label = stringResource(R.string.format_alignment_title),
+                        value = alignDesc,
+                        highlight = chunk.alignment != null,
                     )
 
                     // Bold
@@ -3131,17 +3471,32 @@ private fun FullEditWindow(
                                 ),
                                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                             ) {
+                                val chunkColor = parseChunkColor(chunk.textColorHex, MaterialTheme.colorScheme.onSurface)
+                                val chunkTextAlign = when (chunk.alignment) {
+                                    "center" -> TextAlign.Center
+                                    "right" -> TextAlign.Right
+                                    "justify" -> TextAlign.Justify
+                                    "left" -> TextAlign.Left
+                                    else -> textAlign
+                                }
+                                val chunkCellAlignment = when (chunk.alignment) {
+                                    "center" -> Alignment.Center
+                                    "right" -> Alignment.CenterEnd
+                                    "justify" -> Alignment.CenterStart
+                                    "left" -> Alignment.CenterStart
+                                    else -> cellAlignment
+                                }
                                 Box(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(cellPadding),
-                                    contentAlignment = cellAlignment,
+                                    contentAlignment = chunkCellAlignment,
                                 ) {
                                     Text(
                                         text = chunk.text,
                                         fontSize = (chunk.fontSizeSp ?: fontSize).sp,
-                                        textAlign = textAlign,
-                                        color = MaterialTheme.colorScheme.onSurface,
+                                        textAlign = chunkTextAlign,
+                                        color = chunkColor,
                                         fontWeight = if (chunk.isBold) FontWeight.Bold else FontWeight.Normal,
                                         fontStyle = if (chunk.isItalic) FontStyle.Italic else FontStyle.Normal,
                                         textDecoration = if (chunk.isUnderline) TextDecoration.Underline else TextDecoration.None,

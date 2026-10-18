@@ -188,6 +188,8 @@ object BackupManager {
             if (chunk.isBold) cObj.put("isBold", true)
             if (chunk.isItalic) cObj.put("isItalic", true)
             if (chunk.isUnderline) cObj.put("isUnderline", true)
+            if (!chunk.textColorHex.isNullOrBlank()) cObj.put("textColorHex", chunk.textColorHex)
+            if (!chunk.alignment.isNullOrBlank()) cObj.put("alignment", chunk.alignment)
             chunksArr.put(cObj)
         }
         obj.put("chunks", chunksArr)
@@ -240,6 +242,8 @@ object BackupManager {
                     val isBold = cObj.optBoolean("isBold", false)
                     val isItalic = cObj.optBoolean("isItalic", false)
                     val isUnderline = cObj.optBoolean("isUnderline", false)
+                    val textColorHex = if (cObj.has("textColorHex") && !cObj.isNull("textColorHex")) cObj.optString("textColorHex") else null
+                    val alignment = if (cObj.has("alignment") && !cObj.isNull("alignment")) cObj.optString("alignment") else null
                     chunks.add(
                         Chunk(
                             id = cObj.optString("id", UUID.randomUUID().toString()),
@@ -248,6 +252,8 @@ object BackupManager {
                             isBold = isBold,
                             isItalic = isItalic,
                             isUnderline = isUnderline,
+                            textColorHex = textColorHex,
+                            alignment = alignment,
                         )
                     )
                 }
