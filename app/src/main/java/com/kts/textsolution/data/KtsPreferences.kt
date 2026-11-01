@@ -9,6 +9,8 @@ import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
 import android.text.TextUtils
+import android.util.Log
+import android.widget.Toast
 
 object KtsPreferences {
     private const val PREFS_NAME = "kts_prefs"
@@ -201,22 +203,69 @@ object KtsPreferences {
     }
 
     fun requestIgnoreBatteryOptimization(context: Context) {
+        val packageName = context.packageName
+
+        // 1. Try direct system prompt if on Android M+ and not currently ignored
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            val powerManager = context.getSystemService(Context.POWER_SERVICE) as? PowerManager ?: return
-            if (!powerManager.isIgnoringBatteryOptimizations(context.packageName)) {
-                val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
-                    data = Uri.parse("package:${context.packageName}")
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                }
+            val powerManager = context.getSystemService(Context.POWER_SERVICE) as? PowerManager
+            if (powerManager != null && !powerManager.isIgnoringBatteryOptimizations(packageName)) {
                 try {
-                    context.startActivity(intent)
-                } catch (e: Exception) {
-                    val fallback = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS).apply {
+                    val directIntent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                        data = Uri.parse("package:$packageName")
                         flags = Intent.FLAG_ACTIVITY_NEW_TASK
                     }
-                    context.startActivity(fallback)
+                    context.startActivity(directIntent)
+                    return
+                } catch (e: Exception) {
+                    Log.w("KtsPreferences", "Direct ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS failed: ${e.message}")
                 }
             }
+        }
+
+        // 2. Try Battery Optimization Settings or OEM Background Manager (Vivo, iQOO, Xiaomi, etc.)
+        val fallbacks = listOf(
+            // Battery Optimization Settings list
+            Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            },
+            // Vivo / iQOO Background Power Consumption Manager
+            Intent().apply {
+                component = ComponentName("com.vivo.permissionmanager", "com.vivo.permissionmanager.activity.BgStartUpManagerActivity")
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            },
+            Intent().apply {
+                component = ComponentName("com.iqoo.secure", "com.iqoo.secure.ui.phoneoptimize.BgStartUpManager")
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            },
+            Intent().apply {
+                component = ComponentName("com.vivo.permissionmanager", "com.vivo.permissionmanager.activity.PurviewTabActivity")
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            },
+            // Application Details Settings (App Info) - allows user to set Battery to "Unrestricted"
+            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                data = Uri.parse("package:$packageName")
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+        )
+
+        for (intent in fallbacks) {
+            try {
+                context.startActivity(intent)
+                return
+            } catch (_: Exception) {
+                // Try next
+            }
+        }
+
+        // 3. General Settings fallback
+        try {
+            val general = Intent(Settings.ACTION_SETTINGS).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+            context.startActivity(general)
+        } catch (e: Exception) {
+            Log.e("KtsPreferences", "Failed to open any settings", e)
+            Toast.makeText(context, "Could not open battery settings", Toast.LENGTH_SHORT).show()
         }
     }
 }

@@ -183,6 +183,8 @@
     <string name="items_count_format">%1$d items</string>
     <string name="open_texts_label">Open texts</string>
     <string name="action_close_text">Close text</string>
+    <string name="action_close_current_text">Close Current Window: %1$d. %2$s</string>
+    <string name="action_close_all_texts">Close All Windows</string>
     <string name="session_switched_announced">Text %1$d of %2$d: %3$s</string>
     <string name="action_next_text">Next text</string>
     <string name="action_prev_text">Previous text</string>
@@ -218,10 +220,22 @@
     <string name="menu_about">About</string>
     <string name="about_developer_title">About Developer</string>
     <string name="about_developer_name">Shihab K.T.</string>
+    <string name="about_contact_intro">Feel free to reach out with feedback, suggestions, or questions.</string>
     <string name="about_developer_email">shihabkt08@gmail.com</string>
+    <string name="about_email_label">Email</string>
     <string name="action_send_email">Send Email</string>
-    <string name="action_copy_email">Copy Email Address</string>
+    <string name="action_copy_email">Copy Email</string>
     <string name="email_copied">Email address copied</string>
+    <string name="about_whatsapp_label">WhatsApp</string>
+    <string name="about_whatsapp_number">+91 9746877550</string>
+    <string name="action_open_whatsapp">Open WhatsApp</string>
+    <string name="action_copy_whatsapp">Copy WhatsApp Number</string>
+    <string name="whatsapp_copied">WhatsApp number copied</string>
+    <string name="about_telegram_label">Telegram</string>
+    <string name="about_telegram_id">@Ktshihab</string>
+    <string name="action_open_telegram">Open Telegram</string>
+    <string name="action_copy_telegram">Copy Telegram ID</string>
+    <string name="telegram_copied">Telegram ID copied</string>
 
     <string name="action_format">Format</string>
     <string name="format_dialog_title">Format Selected Text</string>

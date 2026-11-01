@@ -25,6 +25,7 @@ import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed as gridItemsIndexed
@@ -43,9 +44,11 @@ import androidx.compose.material.icons.automirrored.outlined.OpenInNew
 import androidx.compose.material.icons.automirrored.outlined.ShortText
 import androidx.compose.material.icons.automirrored.outlined.NoteAdd
 import androidx.compose.material.icons.automirrored.outlined.Segment
+import androidx.compose.material.icons.automirrored.outlined.Send
 import android.content.ClipData
 import android.content.ClipboardManager
 import androidx.compose.material.icons.automirrored.outlined.Undo
+import androidx.compose.material.icons.outlined.Chat
 import androidx.compose.material.icons.outlined.CheckBox
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.ContentCut
@@ -423,6 +426,10 @@ fun KtsApp(
                             )
                             .semantics {
                                 if (vm.sessions.size > 1) {
+                                    val activeSession = vm.sessions.getOrNull(vm.activeSessionIndex)
+                                    val activeTitle = activeSession?.title ?: ""
+                                    val closeCurrentDesc = view.context.getString(R.string.action_close_current_text, vm.activeSessionIndex + 1, activeTitle)
+                                    val closeAllDesc = view.context.getString(R.string.action_close_all_texts)
                                     customActions = listOf(
                                         CustomAccessibilityAction(nextTextLabel) {
                                             KtsHaptics.vibrateSelect(view.context)
@@ -432,6 +439,16 @@ fun KtsApp(
                                         CustomAccessibilityAction(prevTextLabel) {
                                             KtsHaptics.vibrateSelect(view.context)
                                             vm.switchToPrevSession(sessionSwitchTemplate)
+                                            true
+                                        },
+                                        CustomAccessibilityAction(closeCurrentDesc) {
+                                            KtsHaptics.vibrateAction(view.context)
+                                            vm.closeSession(vm.activeSessionIndex, sessionSwitchTemplate)
+                                            true
+                                        },
+                                        CustomAccessibilityAction(closeAllDesc) {
+                                            KtsHaptics.vibrateAction(view.context)
+                                            vm.closeAllSessions(closeAllDesc)
                                             true
                                         },
                                     )
@@ -1182,6 +1199,13 @@ private fun OpenTextsBar(vm: KtsViewModel) {
     val sessionSwitchTemplate: (Int, Int, String) -> String = { curr, total, title ->
         context.getString(R.string.session_switched_announced, curr, total, title)
     }
+    val listState = rememberLazyListState()
+
+    LaunchedEffect(vm.activeSessionIndex) {
+        if (vm.activeSessionIndex in vm.sessions.indices) {
+            listState.animateScrollToItem(vm.activeSessionIndex)
+        }
+    }
 
     Surface(
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
@@ -1211,6 +1235,7 @@ private fun OpenTextsBar(vm: KtsViewModel) {
             }
 
             LazyRow(
+                state = listState,
                 modifier = Modifier
                     .weight(1f)
                     .padding(horizontal = 4.dp),
@@ -1234,21 +1259,6 @@ private fun OpenTextsBar(vm: KtsViewModel) {
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                             )
                         },
-                        trailingIcon = {
-                            IconButton(
-                                onClick = {
-                                    KtsHaptics.vibrateAction(context)
-                                    vm.closeSession(index, sessionSwitchTemplate)
-                                },
-                                modifier = Modifier.size(18.dp),
-                            ) {
-                                Icon(
-                                    Icons.Outlined.Close,
-                                    contentDescription = "${stringResource(R.string.action_close_text)}: ${index + 1}. ${session.title}",
-                                    modifier = Modifier.size(14.dp),
-                                )
-                            }
-                        },
                     )
                 }
             }
@@ -1267,17 +1277,38 @@ private fun OpenTextsBar(vm: KtsViewModel) {
                 )
             }
 
+            // Close Currently Active Window
+            val activeSession = vm.sessions.getOrNull(vm.activeSessionIndex)
+            val activeTitle = activeSession?.title ?: ""
+            val closeCurrentDesc = stringResource(R.string.action_close_current_text, vm.activeSessionIndex + 1, activeTitle)
+            IconButton(
+                onClick = {
+                    KtsHaptics.vibrateAction(context)
+                    vm.closeSession(vm.activeSessionIndex, sessionSwitchTemplate)
+                },
+                modifier = Modifier.size(32.dp),
+            ) {
+                Icon(
+                    Icons.Outlined.Close,
+                    contentDescription = closeCurrentDesc,
+                    modifier = Modifier.size(18.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            // Close All Button
             if (vm.sessions.size > 1) {
+                val closeAllDesc = stringResource(R.string.action_close_all_texts)
                 IconButton(
                     onClick = {
                         KtsHaptics.vibrateAction(context)
-                        vm.closeAllSessions("Close All")
+                        vm.closeAllSessions(closeAllDesc)
                     },
                     modifier = Modifier.size(32.dp),
                 ) {
                     Icon(
-                        Icons.Outlined.Close,
-                        contentDescription = "Close All",
+                        Icons.Outlined.DeleteSweep,
+                        contentDescription = closeAllDesc,
                         modifier = Modifier.size(18.dp),
                         tint = MaterialTheme.colorScheme.error,
                     )
@@ -3671,13 +3702,14 @@ private fun SettingsPane(
                         }
                     }
 
-                    if (!vm.isBatteryOptIgnored) {
-                        OutlinedButton(
-                            onClick = onRequestIgnoreBatteryOptimization,
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
-                            Text(stringResource(R.string.battery_optimization_btn))
-                        }
+                    OutlinedButton(
+                        onClick = onRequestIgnoreBatteryOptimization,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(
+                            if (vm.isBatteryOptIgnored) stringResource(R.string.battery_optimization_done)
+                            else stringResource(R.string.battery_optimization_btn)
+                        )
                     }
                 }
 
@@ -6094,7 +6126,8 @@ private fun HelpItem(
 private fun AboutPane() {
     val context = LocalView.current.context
     val email = stringResource(R.string.about_developer_email)
-    val emailCopiedMsg = stringResource(R.string.email_copied)
+    val whatsappNumber = stringResource(R.string.about_whatsapp_number)
+    val telegramId = stringResource(R.string.about_telegram_id)
 
     Column(
         modifier = Modifier
@@ -6117,7 +6150,7 @@ private fun AboutPane() {
             fontWeight = FontWeight.Bold,
         )
         Text(
-            text = "Version 1.0.0",
+            text = "Version 1.2.0",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -6148,46 +6181,91 @@ private fun AboutPane() {
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    text = email,
-                    style = MaterialTheme.typography.bodyMedium,
+                    text = stringResource(R.string.about_contact_intro),
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Spacer(Modifier.height(16.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    Button(
-                        onClick = {
-                            val intent = Intent(Intent.ACTION_SENDTO).apply {
-                                data = Uri.parse("mailto:$email")
-                                putExtra(Intent.EXTRA_SUBJECT, "KTS Text Solution Feedback")
-                            }
+
+                // WhatsApp - Single action element
+                Button(
+                    onClick = {
+                        val cleanDigits = whatsappNumber.replace(Regex("[^0-9]"), "")
+                        val uri = Uri.parse("https://wa.me/$cleanDigits")
+                        val intent = Intent(Intent.ACTION_VIEW, uri)
+                        try {
+                            context.startActivity(intent)
+                        } catch (e: Exception) {
                             try {
-                                context.startActivity(intent)
-                            } catch (e: Exception) {
-                                Toast.makeText(context, "No email app found", Toast.LENGTH_SHORT).show()
+                                val waAppIntent = Intent(Intent.ACTION_VIEW, Uri.parse("whatsapp://send?phone=$cleanDigits"))
+                                context.startActivity(waAppIntent)
+                            } catch (e2: Exception) {
+                                Toast.makeText(context, "Could not open WhatsApp", Toast.LENGTH_SHORT).show()
                             }
-                        },
-                        modifier = Modifier.weight(1f),
-                    ) {
-                        Icon(Icons.Outlined.Email, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.width(6.dp))
-                        Text(stringResource(R.string.action_send_email))
-                    }
-                    OutlinedButton(
-                        onClick = {
-                            KtsHaptics.vibrateAction(context)
-                            val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as ClipboardManager
-                            clipboard.setPrimaryClip(ClipData.newPlainText("Developer Email", email))
-                            Toast.makeText(context, emailCopiedMsg, Toast.LENGTH_SHORT).show()
-                        },
-                        modifier = Modifier.weight(1f),
-                    ) {
-                        Icon(Icons.Outlined.ContentCopy, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.width(6.dp))
-                        Text(stringResource(R.string.action_copy_email))
-                    }
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Icon(Icons.Outlined.Chat, contentDescription = null, modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.width(10.dp))
+                    Text(
+                        text = stringResource(R.string.about_whatsapp_label),
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                }
+
+                Spacer(Modifier.height(10.dp))
+
+                // Telegram - Single action element
+                Button(
+                    onClick = {
+                        val cleanTgId = telegramId.removePrefix("@")
+                        val tgUri = Uri.parse("https://t.me/$cleanTgId")
+                        val intent = Intent(Intent.ACTION_VIEW, tgUri)
+                        try {
+                            context.startActivity(intent)
+                        } catch (e: Exception) {
+                            try {
+                                val tgAppIntent = Intent(Intent.ACTION_VIEW, Uri.parse("tg://resolve?domain=$cleanTgId"))
+                                context.startActivity(tgAppIntent)
+                            } catch (e2: Exception) {
+                                Toast.makeText(context, "Could not open Telegram", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Icon(Icons.AutoMirrored.Outlined.Send, contentDescription = null, modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.width(10.dp))
+                    Text(
+                        text = stringResource(R.string.about_telegram_label),
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                }
+
+                Spacer(Modifier.height(10.dp))
+
+                // Email - Single action element
+                Button(
+                    onClick = {
+                        val intent = Intent(Intent.ACTION_SENDTO).apply {
+                            data = Uri.parse("mailto:$email")
+                            putExtra(Intent.EXTRA_SUBJECT, "KTS Text Solution Feedback")
+                        }
+                        try {
+                            context.startActivity(intent)
+                        } catch (e: Exception) {
+                            Toast.makeText(context, "No email app found", Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Icon(Icons.Outlined.Email, contentDescription = null, modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.width(10.dp))
+                    Text(
+                        text = stringResource(R.string.about_email_label),
+                        style = MaterialTheme.typography.titleMedium,
+                    )
                 }
             }
         }

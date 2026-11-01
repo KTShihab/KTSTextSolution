@@ -3,9 +3,13 @@ package com.kts.textsolution
 import android.Manifest
 import android.content.ClipData
 import android.content.ClipboardManager
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -25,6 +29,8 @@ import com.kts.textsolution.ui.theme.KtsTheme
 class MainActivity : ComponentActivity() {
     private val vm: KtsViewModel by viewModels()
     private var clipListener: ClipboardManager.OnPrimaryClipChangedListener? = null
+    private var clipboardRetryCount = 0
+    private val clipboardHandler = Handler(Looper.getMainLooper())
 
     private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission(),
@@ -53,7 +59,7 @@ class MainActivity : ComponentActivity() {
             KtsTheme(darkTheme = vm.darkTheme, highContrast = vm.highContrast) {
                 LaunchedEffect(Unit) {
                     repeatOnLifecycle(Lifecycle.State.RESUMED) {
-                        readClipboard(auto = true)
+                        checkAndCaptureClipboardWithRetry(auto = true)
                     }
                 }
                 KtsApp(
@@ -69,7 +75,7 @@ class MainActivity : ComponentActivity() {
                             vm.announce = getString(R.string.copied)
                         }
                     },
-                    onPaste = { readClipboard(auto = false) },
+                    onPaste = { checkAndCaptureClipboardWithRetry(auto = false) },
                     onPlay = {
                         if (vm.isSpeaking) {
                             BackgroundTtsManager.stop()
@@ -127,10 +133,29 @@ class MainActivity : ComponentActivity() {
         super.onResume()
         vm.refreshPermissionStates(this)
         setupForegroundClipListener()
+        clipboardRetryCount = 0
+        window.decorView.post {
+            checkAndCaptureClipboardWithRetry(auto = true)
+        }
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) {
+            clipboardRetryCount = 0
+            checkAndCaptureClipboardWithRetry(auto = true)
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        clipboardRetryCount = 0
+        checkAndCaptureClipboardWithRetry(auto = true)
     }
 
     override fun onPause() {
         super.onPause()
+        clipboardHandler.removeCallbacksAndMessages(null)
         removeForegroundClipListener()
         if (!vm.autoReadInBackground) {
             BackgroundTtsManager.stop()
@@ -138,6 +163,7 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
+        clipboardHandler.removeCallbacksAndMessages(null)
         if (!vm.autoReadInBackground) {
             BackgroundTtsManager.shutdown()
         }
@@ -147,19 +173,21 @@ class MainActivity : ComponentActivity() {
     private fun setupForegroundClipListener() {
         if (clipListener == null) {
             clipListener = ClipboardManager.OnPrimaryClipChangedListener {
-                val clip = clipboard().primaryClip ?: return@OnPrimaryClipChangedListener
-                val text = ClipboardRepository.extractClipText(clip, this)
-                if (text.isNotBlank()) {
-                    ClipboardRepository.getInstance(this).addOrUpdateClip(this, text)
-                }
+                checkAndCaptureClipboardWithRetry(auto = true)
             }
-            clipboard().addPrimaryClipChangedListener(clipListener)
+            try {
+                clipboard().addPrimaryClipChangedListener(clipListener)
+            } catch (e: Exception) {
+                Log.e("MainActivity", "Failed to add primary clip listener", e)
+            }
         }
     }
 
     private fun removeForegroundClipListener() {
         clipListener?.let {
-            clipboard().removePrimaryClipChangedListener(it)
+            try {
+                clipboard().removePrimaryClipChangedListener(it)
+            } catch (ignored: Exception) {}
             clipListener = null
         }
     }
@@ -167,20 +195,44 @@ class MainActivity : ComponentActivity() {
     private fun clipboard(): ClipboardManager =
         getSystemService(ClipboardManager::class.java)
 
-    private fun readClipboard(auto: Boolean) {
-        if (auto && !vm.autoClipboard) return
-        val clip = clipboard().primaryClip ?: return
-        val text = ClipboardRepository.extractClipText(clip, this)
-        if (text.isBlank()) return
-        ClipboardRepository.getInstance(this).addOrUpdateClip(this, text)
-        val imported = getString(R.string.imported)
-        val loading = getString(R.string.loading_web_page)
-        val webSuccess = getString(R.string.web_page_imported)
-        val webError = getString(R.string.web_page_error)
-        if (auto) {
-            vm.considerClipboard(text, imported, loading, webSuccess, webError)
-        } else {
-            vm.importOrFetch(text, true, imported, loading, webSuccess, webError)
+    private fun checkAndCaptureClipboardWithRetry(auto: Boolean) {
+        val captured = tryCaptureClipboard(auto)
+        if (!captured && clipboardRetryCount < 5) {
+            clipboardRetryCount++
+            clipboardHandler.removeCallbacksAndMessages(null)
+            clipboardHandler.postDelayed({
+                checkAndCaptureClipboardWithRetry(auto)
+            }, 120)
+        } else if (captured) {
+            clipboardRetryCount = 0
+        }
+    }
+
+    private fun tryCaptureClipboard(auto: Boolean): Boolean {
+        return try {
+            val clipMgr = clipboard()
+            val clip = clipMgr.primaryClip ?: return false
+            val text = ClipboardRepository.extractClipText(clip, this)
+            if (text.isBlank()) return false
+
+            // Always ensure the copied text is added to History
+            ClipboardRepository.getInstance(this).addOrUpdateClip(this, text)
+
+            val imported = getString(R.string.imported)
+            val loading = getString(R.string.loading_web_page)
+            val webSuccess = getString(R.string.web_page_imported)
+            val webError = getString(R.string.web_page_error)
+            if (auto) {
+                if (vm.autoClipboard) {
+                    vm.considerClipboard(text, imported, loading, webSuccess, webError)
+                }
+            } else {
+                vm.importOrFetch(text, true, imported, loading, webSuccess, webError)
+            }
+            true
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Error reading clipboard", e)
+            false
         }
     }
 }
